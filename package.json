@@ -1,0 +1,10 @@
+{
+  "name": "kimari-subscription-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Single-file Cloudflare Workers subscription manager",
+  "scripts": {
+    "check": "node --check worker.js"
+  }
+}
