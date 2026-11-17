@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Kimari · 订阅管理</title>
+    <!-- PANEL_STYLE -->
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="brand"><b>◈</b> KIMARI <span class="meta">/ 订阅管理</span></div>
+        <div class="header-actions">
+          <span class="badge">Clash · Mihomo</span>
+          <div class="theme-toggle" role="group" aria-label="页面主题">
+            <button
+              id="themeDark"
+              aria-label="月亮 · 黑白灰主题"
+              aria-pressed="true"
+              title="黑白灰"
+            >
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              >
+                <path d="M20.8 14A9 9 0 0 1 10 3.2 9 9 0 1 0 20.8 14Z" />
+              </svg></button
+            ><button
+              id="themeLight"
+              aria-label="太阳 · 蓝白粉主题"
+              aria-pressed="false"
+              title="蓝白粉"
+            >
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path
+                  d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+      <div id="status" role="status" aria-live="polite" hidden></div>
+      <section id="login" class="card">
+        <h1>打开你的订阅工作台</h1>
+        <p>输入管理密钥，管理订阅来源和分流规则。</p>
+        <form id="loginForm">
+          <label for="key">管理密钥</label
+          ><input id="key" type="password" autocomplete="current-password" required />
+          <div class="actions"><button>进入管理页</button></div>
+        </form>
+      </section>
+      <div id="app" hidden>
+        <section class="card hero">
+          <div class="foot" style="margin: 0 0 18px">
+            <div>
+              <div class="eyebrow">YOUR CONNECTIONS, TOGETHER</div>
+              <h1>一个链接，汇集所有节点<span style="color: var(--muted)">。</span></h1>
+              <span class="small">保存修改后，在客户端更新订阅即可生效。</span>
+            </div>
+            <button class="secondary" id="logout">退出登录</button>
+          </div>
+          <label for="subscription">固定订阅地址 · 请勿公开分享</label>
+          <div class="row">
+            <input id="subscription" readonly /><button id="copy">复制订阅</button
+            ><button class="secondary" id="qrOpen">订阅二维码</button
+            ><button class="secondary" id="download">下载配置</button>
+          </div>
+        </section>
+        <div class="grid">
+          <section class="card">
+            <div class="section-head">
+              <h2><span class="section-number">01</span>在线订阅来源</h2>
+              <span class="tag">域名 / IP / 节点</span>
+            </div>
+            <p class="small">把分散的订阅，连接到同一个入口。</p>
+            <label for="sources">订阅地址或单节点链接，每行一个</label
+            ><textarea
+              id="sources"
+              rows="6"
+              spellcheck="false"
+              placeholder="https://example.com/subscribe&#10;http://公网IP:端口/订阅路径&#10;vless://…"
+            ></textarea>
+            <p class="small">
+              支持公网 IPv4 / IPv6、Clash YAML、Base64
+              和常见节点链接。来源编号按行排序；用于分流的来源请保持顺序。
+            </p>
+            <div class="divider"></div>
+            <details>
+              <summary>为在线来源添加备用文件</summary>
+              <p class="small">
+                在线拉取失败且无缓存时使用。文件保存在配置中，不受七天缓存期限影响。
+              </p>
+              <label for="fileSource">文件对应的来源</label
+              ><select id="fileSource"></select>
+              <div class="actions">
+                <button type="button" class="secondary" id="nodeImport">选择备用文件</button
+                ><input type="file" id="nodeFile" accept=".yaml,.yml,.json,.txt" hidden />
+              </div>
+            </details>
+            <div id="fileSnapshots"></div>
+          </section>
+          <section class="card">
+            <h2><span class="section-number">02</span>路由与来源检查</h2>
+            <label class="check"
+              ><input type="checkbox" id="directCN" checked />启用国内直连规则（.cn 域名与中国大陆
+              IP）</label
+            >
+            <p class="small">局域网直连；自定义规则优先于默认服务规则。</p>
+            <label for="fallback">「漏网之鱼」默认出口</label
+            ><select id="fallback">
+              <option value="节点选择">代理 · 节点选择</option>
+              <option value="DIRECT">直连 · DIRECT</option>
+            </select>
+            <div class="foot stats">
+              <div>
+                <span id="count" class="number">—</span><span class="small"> 个可用节点</span>
+              </div>
+              <button class="secondary" id="preview">检查来源 / 预览</button>
+            </div>
+            <div id="reports"></div>
+            <p class="small">
+              检查会刷新来源。订阅拉取失败时可沿用最近七天内的缓存，并在此显示提示。
+            </p>
+          </section>
+        </div>
+        <section class="card" id="library">
+          <div class="section-head">
+            <h2><span class="section-number">03</span>我的本地订阅</h2>
+            <span class="tag local-tag" id="libraryCount">0 份内容</span>
+          </div>
+          <p class="small">上传文件或粘贴节点，保存后长期保留。重新打开页面，内容依然在这里。</p>
+          <div class="library-layout">
+            <div>
+              <div class="drop-zone">
+                <h3>上传订阅文件</h3>
+                <p class="small">YAML、JSON、TXT 或 Base64 订阅 · 单份不超过 500 KB</p>
+                <button class="secondary" id="libraryUpload">＋ 选择文件</button
+                ><input
+                  type="file"
+                  id="libraryFiles"
+                  accept=".yaml,.yml,.json,.txt"
+                  multiple
+                  hidden
+                />
+              </div>
+              <label for="pasteName">内容名称</label
+              ><input id="pasteName" placeholder="例如：东京备用节点" maxlength="120" /><label
+                for="pasteContent"
+                style="margin-top: 14px"
+                >粘贴订阅内容或节点</label
+              ><textarea
+                id="pasteContent"
+                rows="5"
+                spellcheck="false"
+                placeholder="proxies:&#10;  - name: 我的节点&#10;或粘贴 ss://、vmess://、vless://…"
+              ></textarea>
+              <div class="actions">
+                <button class="secondary" id="pasteAdd">＋ 添加到列表</button>
+              </div>
+              <div id="legacyBlock" hidden>
+                <label for="yaml" style="margin-top: 20px">此前保存的粘贴内容</label
+                ><textarea id="yaml" rows="4" spellcheck="false"></textarea>
+                <p class="small">保留原有来源编号，修改后需保存配置。</p>
+              </div>
+            </div>
+            <div>
+              <label>已添加的内容</label>
+              <div id="importList"></div>
+            </div>
+          </div>
+        </section>
+        <section class="card" style="margin-top: 20px">
+          <h2><span class="section-number">04</span>默认服务分组</h2>
+          <p class="small">
+            更新订阅后，在 Clash 的代理页为每个组选择出口。BT 下载、游戏下载、Steam
+            下载、国内及两个开发组默认直连；其他组默认跟随「节点选择」。客户端会记住已有选择。
+          </p>
+          <div style="overflow-x: auto">
+            <table
+              style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px"
+            >
+              <thead>
+                <tr>
+                  <th scope="col">分流组</th>
+                  <th scope="col">默认出口</th>
+                  <th scope="col">覆盖范围</th>
+                </tr>
+              </thead>
+              <tbody id="defaultGroups"></tbody>
+            </table>
+          </div>
+          <p class="small">
+            Steam 下载 CDN 优先于登录规则。Epic 下载 CDN 使用游戏下载组，共享登录和后台使用 UE5
+            开发组。BT 按进程识别仅适用于本机运行的
+            Clash；路由器无法识别电脑进程。游戏下载覆盖已知专用 CDN，可随时补充自定义域名规则。
+          </p>
+        </section>
+        <section class="card" style="margin-top: 20px">
+          <div class="foot" style="margin: 0 0 8px">
+            <h2><span class="section-number">05</span>自定义分流</h2>
+            <button class="secondary" id="addRule">＋ 添加规则</button>
+          </div>
+          <p class="small">
+            从上到下匹配，优先于默认服务规则。粘贴网址时按域名分流，不区分 HTTPS
+            路径。可直接选择服务分组；检查来源后还可指定来源或单个节点。
+          </p>
+          <div id="rules"></div>
+          <p id="noRules" class="small">还没有自定义规则。例如：example.com → DIRECT。</p>
+        </section>
+        <div class="save-bar">
+          <span class="save-state" id="saveState">已与云端同步</span>
+          <div class="actions">
+            <button id="save">保存配置</button
+            ><button class="secondary" id="export">备份设置</button
+            ><button class="secondary" id="import">导入设置</button
+            ><input type="file" id="file" accept=".json,application/json" hidden />
+          </div>
+        </div>
+        <p class="small" id="saveHint">
+          新增来源后先检查，再保存。Cloudflare 配置同步到不同地区可能需要约一分钟。
+        </p>
+        <details class="card" style="margin-top: 24px">
+          <summary>查看生成配置</summary>
+          <pre id="output">检查来源后显示。配置包含节点密钥，请妥善保管。</pre>
+        </details>
+      </div>
+      <footer class="page-footer">
+        <span>KIMARI / SUBSCRIPTION WORKSPACE</span><span>连接有序，自由随行</span>
+      </footer>
+    </main>
+    <dialog id="qrDialog" aria-labelledby="qrTitle">
+      <div class="dialog-head">
+        <h2 id="qrTitle">固定订阅二维码</h2>
+        <button class="secondary" id="qrClose" aria-label="关闭二维码">×</button>
+      </div>
+      <p class="small">用客户端扫码导入。二维码包含订阅密钥，请妥善保管。</p>
+      <div id="qrImage"></div>
+      <div id="qrLink"></div>
+      <div class="actions"><button id="qrSave">下载二维码</button></div>
+      <p class="small" style="margin-bottom: 0">二维码在本机生成，无需发送到第三方服务。</p>
+    </dialog>
+    <!-- QR_LIBRARY -->
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let targets = ["节点选择", "自动选择", "DIRECT", "REJECT"],
+        last = null,
+        dirty = false,
+        sourceFiles = {},
+        imports = [],
+        savedIds = new Set();
+      function message(text, error = false) {
+        $("status").hidden = false;
+        $("status").className = "notice" + (error ? " error" : "");
+        $("status").textContent = text;
+      }
+      async function api(path, body) {
+        const r = await fetch("/YOUR_ENTRY_PATH/api/" + path, {
+          method: body === undefined ? "GET" : "POST",
+          headers: body === undefined ? {} : { "Content-Type": "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
+        const data = await r.json();
+        if (!r.ok) throw Error(data.error || "请求失败");
+        return data;
+      }
+      function option(select, value, label = value) {
+        const o = document.createElement("option");
+        o.value = value;
+        o.textContent = label;
+        select.append(o);
+      }
+      function rule(value = { type: "DOMAIN-SUFFIX", value: "", target: "节点选择" }) {
+        const row = document.createElement("div");
+        row.className = "rule";
+        const type = document.createElement("select");
+        type.setAttribute("aria-label", "规则类型");
+        [
+          ["DOMAIN-SUFFIX", "域名及子域名"],
+          ["DOMAIN", "精确域名"],
+          ["DOMAIN-KEYWORD", "域名关键词"],
+          ["IP-CIDR", "IPv4 网段"],
+          ["IP-CIDR6", "IPv6 网段"],
+          ["PROCESS-NAME", "进程名"],
+        ].forEach(([v, l]) => option(type, v, l));
+        type.value = value.type;
+        const input = document.createElement("input");
+        input.setAttribute("aria-label", "域名或规则内容");
+        input.placeholder = "example.com 或 https://example.com/page";
+        input.value = value.value;
+        const target = document.createElement("select");
+        target.setAttribute("aria-label", "分流目标");
+        [...new Set([...targets, value.target])].forEach((t) => option(target, t));
+        target.value = value.target;
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "secondary";
+        del.textContent = "删除";
+        del.onclick = () => {
+          row.remove();
+          dirty = true;
+          $("noRules").hidden = !!$("rules").children.length;
+        };
+        row.append(type, input, target, del);
+        $("rules").append(row);
+        $("noRules").hidden = true;
+      }
+      function config() {
+        return {
+          sourceFiles,
+          imports,
+          sources: $("sources").value,
+          yaml: $("yaml").value,
+          directCN: $("directCN").checked,
+          fallback: $("fallback").value,
+          rules: Array.from($("rules").children, (r) => ({
+            type: r.children[0].value,
+            value: r.children[1].value,
+            target: r.children[2].value,
+          })),
+        };
+      }
+      function populate(c) {
+        sourceFiles = c.sourceFiles || {};
+        imports = c.imports || [];
+        savedIds = new Set();
+        $("sources").value = c.sources || "";
+        $("yaml").value = c.yaml || "";
+        $("directCN").checked = c.directCN !== false;
+        $("fallback").value = c.fallback || "节点选择";
+        $("rules").replaceChildren();
+        (c.rules || []).forEach(rule);
+        $("noRules").hidden = !!c.rules?.length;
+        renderFiles();
+        renderImports();
+        $("legacyBlock").hidden = !c.yaml;
+      }
+      function display(r) {
+        last = r;
+        targets = r.targets;
+        $("count").textContent = r.count;
+        $("output").textContent = JSON.stringify(r.config, null, 2);
+        $("reports").replaceChildren();
+        for (const item of r.reports) {
+          const line = document.createElement("div");
+          line.className = "report" + (item.warning ? " warning" : "");
+          line.textContent =
+            item.name + " · " + item.count + " 个节点" + (item.warning ? " · " + item.warning : "");
+          $("reports").append(line);
+        }
+        for (const row of $("rules").children) {
+          const select = row.children[2],
+            current = select.value;
+          select.replaceChildren();
+          [...new Set([...targets, current])].forEach((t) => option(select, t));
+          select.value = current;
+        }
+      }
+      async function run(button, fn) {
+        button.disabled = true;
+        try {
+          await fn();
+        } catch (e) {
+          message(e.message, true);
+        } finally {
+          button.disabled = false;
+        }
+      }
+      let defaultGroups = [];
+      function renderGroups() {
+        const body = $("defaultGroups");
+        body.replaceChildren();
+        for (const g of defaultGroups) {
+          const row = document.createElement("tr");
+          const target = g.name === "漏网之鱼" ? $("fallback").value : g.default;
+          for (const text of [
+            g.name,
+            target === "DIRECT" ? "直连 · DIRECT" : target,
+            g.description,
+          ]) {
+            const cell = document.createElement("td");
+            cell.style.cssText = "padding:10px 12px 10px 0;border-bottom:1px solid var(--line)";
+            cell.textContent = text;
+            row.append(cell);
+          }
+          body.append(row);
+        }
+      }
+      async function load() {
+        const data = await api("config");
+        targets = data.targets || targets;
+        defaultGroups = data.defaultGroups || [];
+        populate(data.config);
+        savedIds = new Set(imports.map((i) => i.id));
+        renderImports();
+        renderGroups();
+        $("subscription").value = data.subscription;
+        $("login").hidden = true;
+        $("app").hidden = false;
+        dirty = false;
+        updateSaveState();
+      }
+      $("fallback").addEventListener("change", renderGroups);
+      $("loginForm").onsubmit = (e) => {
+        e.preventDefault();
+        run(e.submitter, async () => {
+          await api("login", { key: $("key").value });
+          $("key").value = "";
+          await load();
+          $("status").hidden = true;
+        });
+      };
+      $("logout").onclick = () =>
+        run($("logout"), async () => {
+          await api("logout", {});
+          location.reload();
+        });
+      $("app").addEventListener("input", (e) => {
+        if (e.target.id !== "subscription") dirty = true;
+      });
+      $("addRule").onclick = () => {
+        rule();
+        dirty = true;
+      };
+      $("preview").onclick = () =>
+        run($("preview"), async () => {
+          message("正在检查来源…");
+          const r = await api("preview", config());
+          display(r);
+          message(
+            r.count
+              ? "检查完成，共 " + r.count + " 个节点。尚未保存的修改请点击保存。"
+              : "还没有可用节点，请添加或检查来源。",
+            !r.count,
+          );
+        });
+      $("save").onclick = () =>
+        run($("save"), async () => {
+          message("正在校验并保存…");
+          const submitted = config(),
+            signature = JSON.stringify(submitted);
+          const r = await api("config", submitted);
+          const unchanged = signature === JSON.stringify(config());
+          display(r);
+          dirty = !unchanged;
+          if (unchanged) {
+            imports = r.savedConfig.imports;
+            sourceFiles = r.savedConfig.sourceFiles;
+          }
+          savedIds = new Set(r.savedConfig.imports.map((i) => i.id));
+          renderFiles();
+          renderImports();
+          updateSaveState();
+          message(
+            unchanged
+              ? "配置已保存。请在客户端更新订阅；跨地区同步可能需要约一分钟。"
+              : "已保存提交时的配置。保存期间产生的新修改仍待保存。",
+          );
+        });
+      $("copy").onclick = () =>
+        run($("copy"), async () => {
+          await navigator.clipboard.writeText($("subscription").value);
+          message("订阅地址已复制" + (dirty ? "。注意：当前修改尚未保存。" : "。"));
+        });
+      function download(text, name, type) {
+        const url = URL.createObjectURL(new Blob([text], { type }));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+      $("download").onclick = () =>
+        run($("download"), async () => {
+          if (dirty) throw Error("请先保存修改，再下载固定订阅配置");
+          const r = await fetch($("subscription").value);
+          if (!r.ok) {
+            const d = await r.json();
+            throw Error(d.error || "下载失败");
+          }
+          download(await r.text(), "kimari.yaml", "text/yaml");
+        });
+      $("export").onclick = () => {
+        download(JSON.stringify(config(), null, 2), "kimari-settings.json", "application/json");
+        message("设置备份已下载，包含来源地址和节点密钥，请妥善保管。");
+      };
+      $("import").onclick = () => $("file").click();
+      $("file").onchange = async () => {
+        try {
+          const file = $("file").files[0];
+          if (!file) return;
+          if (file.size > 4000000) throw Error("文件太大");
+          const c = JSON.parse(await file.text());
+          if (typeof c.sources !== "string" || !Array.isArray(c.rules))
+            throw Error("不是有效的设置备份");
+          populate(c);
+          renderGroups();
+          dirty = true;
+          message("已导入到编辑区。检查来源后点击保存。");
+        } catch (e) {
+          message(e.message, true);
+        }
+        $("file").value = "";
+      };
+
+      function renderFiles() {
+        const select = $("fileSource"),
+          selected = select.value;
+        select.replaceChildren();
+        option(select, "", "作为额外 YAML 节点导入");
+        const lines = $("sources")
+          .value.split(/\r?\n/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        lines.forEach((url, i) => {
+          if (/^https?:\/\//i.test(url)) {
+            let host;
+            try {
+              host = new URL(url).host;
+            } catch {
+              host = "地址格式待检查";
+            }
+            option(select, url, "来源 " + (i + 1) + " · " + host);
+          }
+        });
+        if ([...select.options].some((o) => o.value === selected)) select.value = selected;
+        $("fileSnapshots").replaceChildren();
+        for (const [url, file] of Object.entries(sourceFiles)) {
+          const i = lines.indexOf(url);
+          const row = document.createElement("div");
+          row.className = "report";
+          const label = document.createElement("span");
+          label.textContent =
+            (i < 0 ? "已移除的来源" : "来源 " + (i + 1)) + " · " + file.name + " ";
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "secondary";
+          remove.textContent = "移除文件快照";
+          remove.onclick = () => {
+            delete sourceFiles[url];
+            dirty = true;
+            renderFiles();
+          };
+          const inspect = document.createElement("details");
+          const summary = document.createElement("summary");
+          summary.textContent = "查看备用文件内容";
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          inspect.append(summary, pre);
+          row.append(label, remove, inspect);
+          $("fileSnapshots").append(row);
+        }
+      }
+      $("sources").addEventListener("change", renderFiles);
+      $("nodeImport").onclick = () => {
+        renderFiles();
+        $("nodeFile").click();
+      };
+      $("nodeFile").onchange = () =>
+        run($("nodeImport"), async () => {
+          try {
+            const file = $("nodeFile").files[0];
+            if (!file) return;
+            if (file.size > 500000) throw Error("单个配置文件不能超过 500 KB");
+            const content = await file.text();
+            const checked = await api("preview", {
+              sources: "",
+              yaml: content,
+              rules: [],
+              directCN: false,
+            });
+            const normalized = JSON.stringify({
+              proxies: checked.config.proxies.map((p) => ({
+                ...p,
+                name: p.name.replace(/^\[1\] /, ""),
+              })),
+            });
+            const source = $("fileSource").value;
+            if (source) sourceFiles[source] = { name: file.name, content: normalized };
+            else
+              imports.push({
+                id: crypto.randomUUID(),
+                name: file.name,
+                kind: "file",
+                content: normalized,
+                count: checked.count,
+                addedAt: Date.now(),
+              });
+            dirty = true;
+            renderFiles();
+            renderImports();
+            message("文件识别成功：" + checked.count + " 个节点。请检查来源并保存配置。");
+          } finally {
+            $("nodeFile").value = "";
+          }
+        });
+
+      window.addEventListener("beforeunload", (e) => {
+        if (dirty) {
+          e.preventDefault();
+          e.returnValue = "";
+        }
+      });
+      if (location.hash.startsWith("#key=")) {
+        $("key").value = decodeURIComponent(location.hash.slice(5));
+        history.replaceState(null, "", location.pathname);
+      }
+      load().catch((e) => {
+        if (e.message !== "请先登录") message(e.message, true);
+      });
+      // EXTRA_SCRIPT
+    </script>
+  </body>
+</html>
