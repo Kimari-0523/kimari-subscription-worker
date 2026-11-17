@@ -2,6 +2,31 @@
 
 一个可在 Cloudflare Workers 手动部署的订阅管理网页。管理界面、订阅解析与转换逻辑都包含在 `worker.js`，无需前端构建或额外上传静态文件。
 
+## 1.1 更新
+
+- 公网 IPv4 / IPv6 订阅使用 Workers TCP socket 读取，支持自定义端口、HTTP 重定向、分块响应和 gzip / deflate。域名订阅继续使用 `fetch()`。HTTPS 保持证书校验；Cloudflare IP 段等平台禁止的目标仍无法连接。
+- 固定订阅地址二维码在浏览器内生成，支持下载 SVG，不调用第三方二维码接口。
+- 上传文件与粘贴节点按条目长期显示，可查看、移除、追加多份内容；点击“保存配置”后写入无过期时间的 KV 配置。独立内容不会被后续上传覆盖，在线来源的备用文件也继续保留。
+- 月亮切换黑白灰主题，太阳切换蓝白粉主题，浏览器记住选择。
+- 兼容原有 `sources`、`yaml`、`sourceFiles`、路由与规则设置。
+
+本版的源码和本地验证已完成；是否已部署，以对应 Cloudflare Worker 的实际版本为准。
+
+## 开发与验证
+
+需要 Node.js 22 或更新版本，无需安装项目依赖。
+
+```sh
+node scripts/build.mjs
+node --check worker.js
+node --test tests/worker.test.mjs
+node scripts/preview.mjs
+```
+
+预览地址为 `http://127.0.0.1:8787/kimari`，只使用独立演示数据，默认写入仓库上级目录的 `preview-data.json`。预览服务自动登录演示环境，只监听本机回环地址。测试中的 TCP 连接使用可控响应夹具，不能替代 Cloudflare 生产网络验证。
+
+`src/panel.html`、`src/panel.css`、`src/panel-extra.js`、`src/backend.js` 和 `src/ip-transport.js` 可编辑，构建后生成可直接部署的单文件 `worker.js`。`src/core.js` 保留原始打包的解析与分流核心。修改源文件后请重新构建，不要仅修改生成文件。
+
 ## 文件
 
 - `worker.js`：从本次部署所用程序完整导出的单文件源码，包含内嵌管理网页与 YAML 处理代码。
