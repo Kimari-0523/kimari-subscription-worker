@@ -17,7 +17,9 @@
 5. 在代码编辑器中打开 `worker.js`，选中全部默认代码。
 6. 用本项目 `worker.js` 的**全部内容**替换，点击“部署”。
 
-该源码已经包含管理页，无需 npm 安装、构建或单独部署 HTML。文件末尾包含 `export{ef as default,oi as remote,wn as validate};`，请勿仅复制网页部分或截断文件。
+仓库提供的 `worker.js` 已经构建完成并包含管理页，无需 npm 安装或单独部署 HTML。请保持 ES 模块 Worker 格式，保留开头的 `cloudflare:sockets` 导入和完整默认导出，不要仅复制网页部分或截断文件。若修改了 `src/`，先运行 `node scripts/build.mjs` 再部署。
+
+升级已有实例时保留原入口、管理密钥、订阅密钥及 `CONFIG` 绑定。不要新建或清空正在使用的 KV；原有配置会继续读取。部署前备份当前代码和页面“备份设置”导出的配置。
 
 ## 3. 创建独立 KV
 
