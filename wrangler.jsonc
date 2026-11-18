@@ -1,0 +1,23 @@
+{
+  "name": "clash-kimari",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-05",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "clash.kimari.top",
+      "custom_domain": true
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CONFIG",
+      "id": "e6d4d9bf1f6d44d29135f32645a907bd"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}
